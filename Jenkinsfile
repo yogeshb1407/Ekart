@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -65,7 +66,8 @@ pipeline {
             steps {
                 script {
                     withDockerRegistry(credentialsId: 'docker-cred') {
-                        sh "docker build -t youngminds73/ekart:latest -f docker/Dockerfile ."
+                       
+                     sh "docker build -t yogeshbadgujarbsl/docker-ekart:latest -f docker/Dockerfile ."
                     }
                 }
             }
@@ -76,24 +78,52 @@ pipeline {
                 script{
                    withCredentials([string(credentialsId: 'dockerhub-pwd', variable: 'dockerhubpwd')]) {
                    sh 'docker login -u yogeshbadgujarbsl -p ${dockerhubpwd}'}
-                   sh 'docker push youngminds73/ekart:latest'
+                   sh 'docker push yogeshbadgujarbsl/docker-ekart:latest'
+                   
+                    
+                       
+                    
+       
                 }
             }
         }
         stage('EKS and Kubectl configuration'){
             steps{
                 script{
-                    sh 'aws eks update-kubeconfig --region us-east-1 --name Ekart-cluster'
+                    sh 'aws eks update-kubeconfig --region ap-south-1 --name ankit-cluster'
                 }
             }
         }
         stage('Deploy to k8s'){
             steps{
                 script{
-                    sh 'kubectl apply -f deploymentservice.yml'
+                    
+                    
+                    withKubeConfig(caCertificate: '', clusterName: ' ankit-cluster', contextName: '', credentialsId: 'k8s', namespace: 'webapps', restrictKubeConfigAccess: false, serverUrl: 'https://AD541513DC8C0D863FCE0E3D301A1B14.gr7.ap-south-1.eks.amazonaws.com') {
+   
+
+                    
+                    
+                    sh 'kubectl apply -f deploymentservice.yml -n webapps'
+                    sleep 30
+                    
+                    }
+                    
                 }
             }
         }
-    }
-
+            
+             stage('EKS check'){
+            steps{
+                script{
+                      withKubeConfig(caCertificate: '', clusterName: ' ankit-cluster', contextName: '', credentialsId: 'k8s', namespace: 'webapps', restrictKubeConfigAccess: false, serverUrl: 'https://AD541513DC8C0D863FCE0E3D301A1B14.gr7.ap-south-1.eks.amazonaws.com'){
+                    sh 'kubectl get pods -n webapps'
+                    sh 'kubectl get svc -n webapps'
+                }
+                }
+            }
+        }
+        }
 }
+
+
